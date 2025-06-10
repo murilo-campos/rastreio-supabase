@@ -1,0 +1,63 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Check-in Entregador</title>
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+</head>
+<body>
+  <h2>Check-in Entregador</h2>
+  <input type="text" id="nome" placeholder="Digite seu nome" />
+  <button onclick="fazerCheckin()">Fazer Check-in</button>
+  <button onclick="fazerCheckout()">Sair</button>
+  <p id="status"></p>
+
+  <script>
+    const supabase = supabase.createClient(
+      "https://aheehrciioihfsgllpvv.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoZWVocmNpaW9paGZzZ2xscHZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MTMyMTksImV4cCI6MjA2NTA4OTIxOX0.LVrCy6UAU4hPo68syWbHmUn8Hmpyj4ekNm_fx0QTULY"
+    );
+
+    async function fazerCheckin() {
+      const nome = document.getElementById("nome").value.trim();
+      if (!nome) return alert("Digite seu nome");
+
+      if (!navigator.geolocation) {
+        return alert("Geolocalização não suportada.");
+      }
+
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        const { latitude, longitude } = pos.coords;
+
+        const { error } = await supabase.from("Roterizador").upsert({
+          nome,
+          lat: latitude,
+          lng: longitude,
+          hora: new Date().toISOString(),
+          ativo: true
+        });
+
+        if (error) {
+          document.getElementById("status").innerText = "Erro: " + error.message;
+        } else {
+          document.getElementById("status").innerText = "Check-in realizado com sucesso!";
+        }
+      });
+    }
+
+    async function fazerCheckout() {
+      const nome = document.getElementById("nome").value.trim();
+      if (!nome) return alert("Digite seu nome");
+
+      const { error } = await supabase.from("Roterizador").update({ ativo: false }).eq("nome", nome);
+
+      if (error) {
+        document.getElementById("status").innerText = "Erro ao sair: " + error.message;
+      } else {
+        document.getElementById("status").innerText = "Você saiu com sucesso.";
+      }
+    }
+  </script>
+</body>
+</html>
