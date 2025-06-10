@@ -1,0 +1,56 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Painel de Entregadores</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+  <style>
+    #map { height: 90vh; width: 100%; }
+    body { font-family: sans-serif; padding: 0; margin: 0; }
+  </style>
+</head>
+<body>
+  <h2 style="text-align:center">Painel de Entregadores Ativos</h2>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
+  <script>
+    const supabase = supabase.createClient(
+      "https://aheehrciioihfsgllpvv.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFoZWVocmNpaW9paGZzZ2xscHZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MTMyMTksImV4cCI6MjA2NTA4OTIxOX0.LVrCy6UAU4hPo68syWbHmUn8Hmpyj4ekNm_fx0QTULY"
+    );
+
+    const map = L.map("map").setView([-14.2, -51.9], 4); // centro do Brasil
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    async function carregarEntregadores() {
+      const { data, error } = await supabase
+        .from("Roterizador")
+        .select("*")
+        .eq("ativo", true);
+
+      if (error) {
+        console.error("Erro ao buscar entregadores:", error.message);
+        return;
+      }
+
+      data.forEach(entregador => {
+        if (entregador.lat && entregador.lng) {
+          const popupContent = `<b>${entregador.nome}</b><br>${new Date(entregador.hora).toLocaleTimeString()}`;
+          L.marker([entregador.lat, entregador.lng])
+            .addTo(map)
+            .bindPopup(popupContent);
+        }
+      });
+    }
+
+    carregarEntregadores();
+    setInterval(carregarEntregadores, 10000); // atualiza a cada 10s
+  </script>
+</body>
+</html>
