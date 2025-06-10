@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Painel de Entregadores</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+  <style>#map { height: 90vh; width: 100%; }</style>
+</head>
+<body>
+  <h2>Painel em Tempo Real</h2>
+  <div id="map"></div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCwRQ8_GFwh80n7QvJc7WiBOH2zO3VKw0Y",
+      authDomain: "rastreio-45672.firebaseapp.com",
+      databaseURL: "https://rastreio-45672-default-rtdb.firebaseio.com",
+      projectId: "rastreio-45672",
+      storageBucket: "rastreio-45672.appspot.com",
+      messagingSenderId: "359412932669",
+      appId: "1:359412932669:web:f8749d54075052db748a54"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const map = L.map('map').setView([-15.7942, -47.8822], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+    const marcadores = {};
+
+    function tempoDesde(iso) {
+      const delta = Math.floor((Date.now() - new Date(iso)) / 60000);
+      return delta === 0 ? "menos de 1 min" : `há ${delta} min`;
+    }
+
+    db.ref("entregadores").on("value", snapshot => {
+      const dados = snapshot.val();
+      for (const nome in dados) {
+        const ent = dados[nome];
+        const pos = [ent.lat, ent.lng];
+        const ativo = ent.ativo === true;
+        const texto = `<b>${nome}</b><br/>Último update: ${tempoDesde(ent.hora)}<br>Status: ${ativo ? '🟢 Ativo' : '⚪ Inativo'}`;
+
+        if (marcadores[nome]) {
+          marcadores[nome].setLatLng(pos).setPopupContent(texto);
+        } else {
+          marcadores[nome] = L.marker(pos, {
+            opacity: ativo ? 1 : 0.5
+          }).addTo(map).bindPopup(texto);
+        }
+        marcadores[nome].setOpacity(ativo ? 1 : 0.5);
+      }
+    });
+  </script>
+</body>
+</html>
